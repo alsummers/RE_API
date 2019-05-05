@@ -39,6 +39,52 @@ exports.signup = function(req, res, next){
         })
 }
 
+exports.login = function(req, res, next){
+    var values = {
+        password: req.body.password,
+        username: req.body.username
+    }
+
+    var expect = 'username, first_name, last_name, email, password, id'
+    var postG = `SELECT ${expect} FROM users WHERE username=$1`
+    config.db.query(postG , [values.username] , function (err, rows, fields) {
+        if(err) {
+            console.log(err)
+            return err
+        }
+
+        var user = rows.rows[0]
+        if(user){
+            bcrypt.compare(values.password, user.password, (err, result) => {
+                if(err){
+                    return res.status(404).json({
+                        message: 'User Auth failed'
+                    })
+                }
+                if(result){
+                    var response = {
+                        username: user.username,
+                        firstname: user.first_name,
+                        lastname: user.last_name,
+                        email: user.email,
+                        id: user.id
+                    }
+                    return res.status(200).json({
+                        message: "Login Success",
+                        result: response
+                    })
+                }
+                res.status(404).json({
+                    message: 'User Auth failed'
+                })
+                
+            })
+        } else {
+            res.send({ message: 'User Auth failed'})
+        }
+    })
+
+}
 exports.getUsers = function(req, res, next){
     var fields = []
 
