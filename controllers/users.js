@@ -3,7 +3,7 @@ const config = require('../config')
 exports.getUsers = function(req, res, next){
     var fields = []
 
-    var postG = "SELECT * FROM users"
+    var postG = "SELECT * FROM get_users()"
     config.db.query(postG , fields , function (err, rows, fields) {
         if(err) {
             console.log(err)
@@ -25,13 +25,13 @@ exports.createUser = function(req, res, next){
             last_name: req.body.last_name,
             username: req.body.username,
             email: req.body.email,
-            id: req.body.id,
             password: req.body.password
         }
-    var fields = [values.first_name, values.last_name, values.username, values.email, values.id, values.password]
+    var fields = [values.first_name, values.last_name, values.username, values.email, values.password]
+
 
     var postG = "INSERT INTO users (first_name, last_name, username, email, id, password)"
-        postG += "VALUES($1, $2, $3, $4, $5, $6)"
+        postG += "VALUES($1, $2, $3, $4, uuid_generate_v4(), $5)"
     
     config.db.query(postG, fields, function (err, rows, fields){
         if(err){
@@ -65,3 +65,4 @@ exports.deleteUser = function(req, res, next){
         }
     })
 }
+
