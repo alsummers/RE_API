@@ -1,5 +1,6 @@
 const config = require('../config')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 exports.signup = function(req, res, next){
     bcrypt.hash(req.body.password, 10, (err, hash) => {
@@ -21,6 +22,7 @@ exports.signup = function(req, res, next){
             var fields = [values.first_name, values.last_name, values.username, values.email, values.password]
             var postG = "INSERT INTO users (first_name, last_name, username, email, id, password)"
             postG += "VALUES($1, $2, $3, $4, uuid_generate_v4(), $5)"
+            postG += "RETURNING *"
             
             config.db.query(postG, fields, function (err, rows, fields) {
                 if(err){
@@ -62,16 +64,20 @@ exports.login = function(req, res, next){
                     })
                 }
                 if(result){
-                    var response = {
-                        username: user.username,
-                        firstname: user.first_name,
-                        lastname: user.last_name,
-                        email: user.email,
-                        id: user.id
-                    }
+                    const token = jwt.sign(
+                        {
+                            username: user.username,
+                            email: user.email,
+                            id: user.id,
+                        },
+                        process.env.JWT_SECRET,
+                        {
+                            expiresIn: '1h'
+                        }
+                    )
                     return res.status(200).json({
                         message: "Login Success",
-                        result: response
+                        token: token
                     })
                 }
                 res.status(404).json({
@@ -104,7 +110,7 @@ exports.getUsers = function(req, res, next){
 }
 
 exports.deleteUser = function(req, res, next){
-    var values = {id: req.body.id}
+    var values = {id: req.params.id}
     var fields = [values.id]
 
     var postG = "DELETE FROM users WHERE id = $1"
@@ -123,3 +129,22 @@ exports.deleteUser = function(req, res, next){
     })
 }
 
+exports.getUserValues = function(req, res, next){
+    var values = {id: req.params.id}
+    var fields = [values.id]
+
+    var postG = "SELECT * FROM users WHERE id = $1"
+
+    config.db.query(postG, fields, function (err, rows, fields){
+        if(err){
+            console.log(err)
+            return err
+        }
+        if(rows){
+            console.log(rows)
+            res.send(rows.rows[0])
+        } else {
+            res.send({})
+        }
+    })
+}
